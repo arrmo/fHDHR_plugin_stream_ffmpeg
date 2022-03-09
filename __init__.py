@@ -64,7 +64,7 @@ class Plugin_OBJ():
         self.plugin_utils = plugin_utils
         self.stream_args = stream_args
         self.tuner = tuner
-        self.transcode_configs = []
+        self.transcode_configs = {}
 
         self.ffmpeg_path = self.plugin_utils.config.dict["ffmpeg"]["path"]
         self.buffsize = self.plugin_utils.config.dict["ffmpeg"]["buffsize"]
@@ -81,7 +81,7 @@ class Plugin_OBJ():
         except FileNotFoundError:
             self.plugin_utils.logger.noob("Transcoding configurations file not found, using default configuration")
             self.stream_args["transcode_quality"] = None
-            self.transcode_configs = {"heavy": ["-c", "copy", "-f", "mpegts"]}
+            self.transcode_configs = {"heavy": { "global": [], "input": [], "output": ["-c", "copy", "-f", "mpegts"]} }
 
         self.ffmpeg_command = self.ffmpeg_command_assemble(self.stream_args)
         self.plugin_utils.logger.noob("ffmpeg command: %s" % self.ffmpeg_command)
@@ -104,15 +104,32 @@ class Plugin_OBJ():
         return generate()
 
     def ffmpeg_command_assemble(self, stream_args):
-        ffmpeg_command = [
-                          self.ffmpeg_path,
-                          "-i", stream_args["stream_info"]["url"],
-                          ]
+        if stream_args["transcode_quality"]:
+            self.plugin_utils.logger.info("Client requested a %s transcode for stream." % stream_args["transcode_quality"])
+
+        if not stream_args["transcode_quality"] in self.transcode_configs:
+            self.plugin_utils.logger.info("Trancode type / key not found, forcing 'heavy' transcoding.")
+            stream_args["transcode_quality"] = "heavy"
+
+        ffmpeg_command = [self.ffmpeg_path]
+        ffmpeg_command.extend(self.global_options(stream_args))
+        ffmpeg_command.extend(self.input_options(stream_args))
+        ffmpeg_command.extend(["-i", stream_args["stream_info"]["url"]])
         ffmpeg_command.extend(self.ffmpeg_headers(stream_args))
         ffmpeg_command.extend(self.ffmpeg_duration(stream_args))
         ffmpeg_command.extend(self.transcode_profiles(stream_args))
         ffmpeg_command.extend(self.ffmpeg_loglevel())
         ffmpeg_command.extend(["pipe:stdout"])
+        return ffmpeg_command
+
+    def global_options(self, stream_args):
+        ffmpeg_command = []
+        ffmpeg_command.extend(self.transcode_configs[stream_args["transcode_quality"]]["global"])
+        return ffmpeg_command
+
+    def input_options(self, stream_args):
+        ffmpeg_command = []
+        ffmpeg_command.extend(self.transcode_configs[stream_args["transcode_quality"]]["input"])
         return ffmpeg_command
 
     def ffmpeg_headers(self, stream_args):
@@ -166,14 +183,6 @@ class Plugin_OBJ():
         return ffmpeg_command
 
     def transcode_profiles(self, stream_args):
-
-        if stream_args["transcode_quality"]:
-            self.plugin_utils.logger.info("Client requested a %s transcode for stream." % stream_args["transcode_quality"])
-
         ffmpeg_command = []
-        if not stream_args["transcode_quality"] in self.transcode_configs:
-            self.plugin_utils.logger.info("Trancode type / key not found, forcing 'heavy' transcoding.")
-            stream_args["transcode_quality"] = "heavy"
-        ffmpeg_command.extend(self.transcode_configs[stream_args["transcode_quality"]])
-
+        ffmpeg_command.extend(self.transcode_configs[stream_args["transcode_quality"]]["output"])
         return ffmpeg_command
