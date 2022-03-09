@@ -1,5 +1,6 @@
 import os
 import subprocess
+import json
 
 from fHDHR.exceptions import TunerError
 
@@ -63,6 +64,7 @@ class Plugin_OBJ():
         self.plugin_utils = plugin_utils
         self.stream_args = stream_args
         self.tuner = tuner
+        self.transcode_configs = []
 
         self.ffmpeg_path = self.plugin_utils.config.dict["ffmpeg"]["path"]
         self.buffsize = self.plugin_utils.config.dict["ffmpeg"]["buffsize"]
@@ -70,10 +72,13 @@ class Plugin_OBJ():
         if self.plugin_utils.versions.dict["ffmpeg"]["version"] == "Missing":
             raise TunerError("806 - Tune Failed: FFMPEG Missing")
 
-        self.ffmpeg_command = self.ffmpeg_command_assemble(stream_args)
-
     def get(self):
 
+        with open('transcode.json', 'r') as fp:
+            self.transcode_configs = json.load(fp)
+
+        self.ffmpeg_command = self.ffmpeg_command_assemble(self.stream_args)
+        self.plugin_utils.logger.noob("ffmpeg command: %s" % self.ffmpeg_command)
         ffmpeg_proc = subprocess.Popen(self.ffmpeg_command, stdout=subprocess.PIPE, bufsize=int(self.buffsize))
 
         def generate():
@@ -160,56 +165,9 @@ class Plugin_OBJ():
             self.plugin_utils.logger.info("Client requested a %s transcode for stream." % stream_args["transcode_quality"])
 
         ffmpeg_command = []
-
-        if not stream_args["transcode_quality"] or stream_args["transcode_quality"] == "heavy":
-            ffmpeg_command.extend([
-                                    "-c", "copy",
-                                    "-f", "mpegts"
-                                    ])
-
-        elif stream_args["transcode_quality"] == "mobile":
-            ffmpeg_command.extend([
-                                    "-c", "copy",
-                                    "-s", "1280X720",
-                                    "-b:v", "500k",
-                                    "-b:a", "128k",
-                                    "-f", "mpegts"
-                                    ])
-
-        elif stream_args["transcode_quality"] == "internet720":
-            ffmpeg_command.extend([
-                                    "-c", "copy",
-                                    "-s", "1280X720",
-                                    "-b:v", "1000k",
-                                    "-b:a", "196k",
-                                    "-f", "mpegts"
-                                    ])
-
-        elif stream_args["transcode_quality"] == "internet480":
-            ffmpeg_command.extend([
-                                    "-c", "copy",
-                                    "-s", "848X480",
-                                    "-b:v", "400k",
-                                    "-b:a", "128k",
-                                    "-f", "mpegts"
-                                    ])
-
-        elif stream_args["transcode_quality"] == "internet360":
-            ffmpeg_command.extend([
-                                    "-c", "copy",
-                                    "-s", "640X360",
-                                    "-b:v", "250k",
-                                    "-b:a", "96k",
-                                    "-f", "mpegts"
-                                    ])
-
-        elif stream_args["transcode_quality"] == "internet240":
-            ffmpeg_command.extend([
-                                    "-c", "copy",
-                                    "-s", "432X240",
-                                    "-b:v", "250k",
-                                    "-b:a", "96k",
-                                    "-f", "mpegts"
-                                    ])
+        if not stream_args["transcode_quality"] in self.transcode_configs:
+            self.plugin_utils.logger.info("Trancode type / key not found, forcing 'heavy' transcoding.")
+            stream_args["transcode_quality"] = "heavy"
+        ffmpeg_command.extend(self.transcode_configs[stream_args["transcode_quality"]])
 
         return ffmpeg_command
