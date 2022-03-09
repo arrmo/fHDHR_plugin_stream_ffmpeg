@@ -74,8 +74,14 @@ class Plugin_OBJ():
 
     def get(self):
 
-        with open('transcode.json', 'r') as fp:
-            self.transcode_configs = json.load(fp)
+        try:
+            with open('transcode.json', 'r') as fp:
+                self.transcode_configs = json.load(fp)
+                self.plugin_utils.logger.noob("Loaded transcoding configurations file, %s" % fp.name)
+        except FileNotFoundError:
+            self.plugin_utils.logger.noob("Transcoding configurations file not found, using default configuration")
+            self.stream_args["transcode_quality"] = None
+            self.transcode_configs = {"heavy": ["-c", "copy", "-f", "mpegts"]}
 
         self.ffmpeg_command = self.ffmpeg_command_assemble(self.stream_args)
         self.plugin_utils.logger.noob("ffmpeg command: %s" % self.ffmpeg_command)
