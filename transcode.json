@@ -1,0 +1,48 @@
+{
+  "heavy": {
+    "global": [],
+    "input": [],
+    "output": ["-c", "copy", "-f", "mpegts"]
+  },
+  "mobile": {
+    "global": [],
+    "input": [],
+    "output": ["-c", "copy", "-s", "1280X720", "-b:v", "500k", "-b:a", "128k", "-f", "mpegts"]
+  },
+  "internet720": {
+    "global": [],
+    "input": [],
+    "output": ["-c", "copy", "-s", "1280X720", "-b:v", "1000k", "-b:a", "196k", "-f", "mpegts"]
+  },
+  "internet480": {
+    "global": [],
+    "input": [],
+    "output": ["-c", "copy", "-s", "848X480", "-b:v", "400k", "-b:a", "128k", "-f", "mpegts"]
+  },
+  "internet360": {
+    "global": [],
+    "input": [],
+    "output": ["-c", "copy", "-s", "640X360", "-b:v", "250k", "-b:a", "96k", "-f", "mpegts"]
+  },
+  "internet240": {
+    "global": [],
+    "input": [],
+    "output": ["-c", "copy", "-s", "432X240", "-b:v", "250k", "-b:a", "96k", "-f", "mpegts"]
+  },
+  "active": {
+    "global": [],
+    "input": ["-hwaccel", "cuda", "-deint", "1", "-hwaccel_output_format", "cuda"],
+    "output": ["-vf", "scale_npp=1920:1080", "-c:v", "hevc_nvenc", "-preset", "p6", "-tune", "hq", "-b:v", "3M", "-c:a", "ac3", "-b:a", "196k", "-f", "mpegts"]
+  },
+  "nvhw_hevc": {
+    "global": [],
+    "input": ["-hwaccel", "cuda", "-deint", "1", "-hwaccel_output_format", "cuda"],
+    "output": ["-vf", "scale_npp=1920:1080", "-c:v", "hevc_nvenc", "-preset", "p6", "-tune", "hq", "-b:v", "3M", "-c:a", "ac3", "-b:a", "196k", "-f", "mpegts"]
+  },
+  "nvhw_h264": {
+    "global": [],
+    "input": ["-hwaccel", "cuda", "-deint", "1", "-hwaccel_output_format", "cuda"],
+    "output": ["-vf", "scale_npp=1920:1080", "-c:v", "h264_nvenc", "-preset", "p6", "-tune", "hq", "-b:v", "4M", "-c:a", "ac3", "-b:a", "196k", "-f", "mpegts"]
+  }
+}
+
