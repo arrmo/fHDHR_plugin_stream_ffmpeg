@@ -75,7 +75,8 @@ class Plugin_OBJ():
     def get(self):
 
         try:
-            with open('transcode.json', 'r') as fp:
+            cwd = os.path.dirname(os.path.realpath(__file__))
+            with open(cwd + '/transcode.json', 'r') as fp:
                 self.transcode_configs = json.load(fp)
                 self.plugin_utils.logger.noob("Loaded transcoding configurations file, %s" % fp.name)
         except FileNotFoundError:
@@ -85,7 +86,11 @@ class Plugin_OBJ():
 
         self.ffmpeg_command = self.ffmpeg_command_assemble(self.stream_args)
         self.plugin_utils.logger.noob("ffmpeg command: %s" % self.ffmpeg_command)
-        ffmpeg_proc = subprocess.Popen(self.ffmpeg_command, stdout=subprocess.PIPE, bufsize=int(self.buffsize))
+        if self.plugin_utils.config.dict["logging"]["level"].lower() not in ["info", "debug"]:
+            errpipe = subprocess.DEVNULL
+        else:
+            errpipe = None
+        ffmpeg_proc = subprocess.Popen(self.ffmpeg_command, stdout=subprocess.PIPE, stderr=errpipe, bufsize=int(self.buffsize))
 
         def generate():
             try:
